@@ -1,0 +1,16 @@
+{
+    "name": "vendor/keyword-analytics",
+    "description": "Tool used to check competition and search volume in various niches. Uses AdWords Targeting Idea Service.",
+    "authors": [
+        {
+            "name": "Andrius.Ramanauskas",
+            "email": "your@email.here"
+        }
+    ],
+    "autoload": {
+        "psr-4": {"KeywordAnalytics\\": "src/"}
+    },
+    "require": {
+        "googleads/googleads-php-lib": "dev-master"
+    }
+}
