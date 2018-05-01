@@ -42,6 +42,7 @@ class Common
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.js"></script>
     <script src="js/URI.fragmentQuery.js"></script>
     <script src="js/ko.extenders.urlSync.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.min.js" integrity="sha384-FzT3vTVGXqf7wRfy8k4BiyzvbNfeYjK+frTVqZeNDFl8woCbF0CYG6g2fMEFFo/i" crossorigin="anonymous"></script>
 </HEAD>
 <BODY>
     <h1><?=$title?></h1>
@@ -148,7 +149,7 @@ class Common
         {
 ?>
 <script>
-    function ajaxCall (baseUrl, fn, data, model, progress, successCallback)
+    function ajaxCall (baseUrl, fn, data, model, progress, successCallback, form)
         {
         if (progress())
             return; // already in the middle of the operation
@@ -157,7 +158,8 @@ class Common
         
         model.errors.removeAll();
         progress(true);
-        $.ajax(
+        var fn = form ? form.ajaxSubmit.bind(form) : $.ajax;
+        fn(
             {
             type: "POST",
             url: ko.unwrap (baseUrl),
@@ -165,7 +167,11 @@ class Common
             success: function (data, textStatus, jqXHR)
                 {
                 progress(false);
-                if (data.errors && data.errors.length)
+                if (!data)
+                    {
+                    model.errors (["ERROR: null reqsponse"]);
+                    }
+                else if (data.errors && data.errors.length)
                     {
                     model.errors (data.errors);
                     }

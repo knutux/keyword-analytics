@@ -48,7 +48,7 @@ class Ajax
             {
             case "kwd":
                 $kwd = self::getStringParam($postArgs, 'kwd');
-                $result = $model->getKeywordStats ($db, $kwd);
+                $result = $model->getKeywordStats ($db, $kwd, $_FILES['csv'] ?? null);
                 break;
             case "edit":
                 $type = $message[1] ?? '??';

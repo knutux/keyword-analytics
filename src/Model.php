@@ -134,6 +134,7 @@ class Model
         $this->model->mode = 'analytics';
         $this->model->kwd = '';
         $this->model->errors = $this->errors;
+        $this->model->keywords = [];
         }
 
     public function getGoogleApiSession (string &$error = null)
@@ -151,7 +152,82 @@ class Model
         return $session;
         }
 
-    public function getKeywordStats (Database $db, string $keyword)
+    private function toNumber(string $number) : int
+        {
+        return preg_replace ('/(,|\s)/', '', $number);
+        }
+        
+    public function extractCSVKeywords (Database $db, \stdClass &$model, string $fileName)
+        {
+        $handle = fopen('php://memory', 'r+');
+        if (empty ($handle))
+            {
+            $model->errors[] = "Could not open csv file [$fileName]";
+            return $model;
+            }
+
+        fwrite($handle, mb_convert_encoding (file_get_contents($fileName), "UTF-8", "UTF-16"));
+        rewind($handle);
+        
+        $lines = [];
+        $index = 0;
+        while ( ($data = fgetcsv($handle, 0, "\t", "\"") ) !== FALSE )
+            {
+            ++$index;
+            if (1 == $index /* Keyword Stats 2018-05-01 at 21_40_04 */ || 2 == $index /**/)
+                {
+                if (count ($data) !== 1)
+                    $model->errors[] = "Invalid first two rows [$index] - ". print_r($data, true);
+                continue;
+                }
+
+            if (3 == $index)
+                $headerRow = $data;
+            else
+                $lines[] = array_combine($headerRow, $data);
+            }
+        fclose($handle);
+
+        $model->keywords = [];
+        foreach ($lines as $row)
+            {
+            $model->keywords[] =
+                [
+                    'keyword' => $row['Keyword'],
+                    'currency' => $row['Currency'],
+                    'volume' => $this->toNumber($row['Max search volume']) - $this->toNumber($row['Min search volume']),
+                    'competition' => $row['Competition'],
+                    'bidLow' => $row['Top of page bid (low range)'],
+                    'bidHigh' => $row['Top of page bid (high range)'],
+                ];
+            }
+            
+        $model->success = true;
+        }
+
+    public function getKeywordStats (Database $db, string $keyword, array $file = null)
+        {
+        $model = $this->createModelObject ($db);
+        $model->success = false;
+        $model->keywords = [];
+        
+        if (empty ($file) || empty ($file['tmp_name']))
+            {
+            $model->errors[] = "No file uploaded";
+//            var_dump ($_FILES);
+            }
+        else if ($file['error'] !== UPLOAD_ERR_OK)
+            {
+            $model->errors[] = "Upload error - {$file['error']}";
+            }
+        else
+            $this->extractCSVKeywords ($db, $model, $file['tmp_name']);
+            
+        return $model;
+        }
+        
+    // TODO: make use of Adwords API tracking idea service in the future (but it is hard to get non-test account for keyword tools)
+    public function getKeywordStats_TrackingService (Database $db, string $keyword)
         {
         $model = $this->createModelObject ($db);
         $model->success = false;
